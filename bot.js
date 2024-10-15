@@ -1,15 +1,16 @@
 const { Telegraf, Markup } = require('telegraf'); // Importa o Telegraf e o Markup
 const axios = require('axios'); // Importa o Axios para requisições HTTP
-const bot = new Telegraf('7853185177:AAFcV7e8auo_QxMPHaE9_CYJ0O3LgbOm50E'); // Token do seu bot
+require('dotenv').config(); // Carrega as variáveis de ambiente
 
-// Define a chave da API do Pushin Pay
-const PUSHIN_PAY_API_KEY = '1720|hZ42SlgkeM27SP6J1oJWR5I3hgmqKg988TtQtJsE5f93fe73';
+// Token do seu bot e chave da API do Pushin Pay a partir das variáveis de ambiente
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN); 
+const PUSHIN_PAY_API_KEY = process.env.PUSHIN_PAY_API_KEY;
 
 // URL base da API
 const API_BASE_URL = 'https://api.pushinpay.com.br/api'; // Use a URL de produção
 
 // ID do administrador (substitua pelo ID do seu administrador)
-const ADMIN_ID = '5308694170';
+const ADMIN_ID = process.env.ADMIN_ID; // Coloque o ID do seu administrador aqui ou como variável de ambiente
 
 // Função para enviar a mensagem inicial
 bot.start((ctx) => {
@@ -60,24 +61,24 @@ async function gerarPagamento(ctx, valor, descricao) {
             const transactionId = response.data.id; // Armazena o ID da transação
 
             await ctx.reply(
-                `✅ ***Pagamento Gerado com Sucesso\\! *** ✅ \n\n` + // Negrito
-                `Seu pagamento foi gerado e é válido por 30 minutos\\. \n\n` + // Regular
-                `ℹ️ Para efetuar o pagamento, utilize a opção ***"Pagar" \\-\\> "PIX Copia e Cola"*** no aplicativo do seu banco\\. \\(Não usar a opção chave aleatória\\) \n\n` + // Regular
-                `Agora, é só realizar o pagamento e aguardar a aprovação\\. Assim que for aprovado, você receberá o acesso imediatamente\\.\n\n` + // Regular
-                `> ${descricao} \n\n` + // Citação e Negrito
+                `✅ ***Pagamento Gerado com Sucesso\\! *** ✅ \n\n` +
+                `Seu pagamento foi gerado e é válido por 30 minutos\\. \n\n` +
+                `ℹ️ Para efetuar o pagamento, utilize a opção ***"Pagar" \\-\\> "PIX Copia e Cola"*** no aplicativo do seu banco\\. \\(Não usar a opção chave aleatória\\) \n\n` +
+                `Agora, é só realizar o pagamento e aguardar a aprovação\\. Assim que for aprovado, você receberá o acesso imediatamente\\.\n\n` +
+                `> ${descricao} \n\n` +
                 `***Copie o código abaixo:*** 👇🏻`,
                 { parse_mode: 'MarkdownV2' }
             );
 
             // Mensagem com a chave PIX
             await ctx.reply(
-                `\`\`\`${qrCode}\`\`\``, // QR Code em monoespaço
+                `\`\`\`${qrCode}\`\`\``,
                 {
                     parse_mode: 'MarkdownV2',
                     reply_markup: {
                         inline_keyboard: [
                             [
-                                { text: '⏳ JÁ PAGUEI ⏳', callback_data: `verificar_pagamento:${transactionId}` } // Botão para verificar pagamento
+                                { text: '⏳ JÁ PAGUEI ⏳', callback_data: `verificar_pagamento:${transactionId}` }
                             ]
                         ]
                     }
@@ -137,9 +138,8 @@ async function verificarPagamento(ctx, transactionId) {
             await ctx.reply(`🎉 **Bem-vindo!** 🎉\n\nSeu pagamento foi aprovado! Aqui está o link do seu pacote: [Clique aqui](${linkEntrega})`);
 
             // Notificação ao administrador
-            const adminId = '5308694170'; // Substitua pelo ID do administrador
-            const mensagemAdmin = `Venda Realizada\nSua comissão: R$ ${valor / 100}`; // Divide por 100, pois o valor é em centavos
-            await bot.telegram.sendMessage(adminId, mensagemAdmin); // Envia a mensagem ao administrador
+            const mensagemAdmin = `Venda Realizada\nSua comissão: R$ ${(valor / 100).toFixed(2)}`; // Divide por 100, pois o valor é em centavos
+            await bot.telegram.sendMessage(ADMIN_ID, mensagemAdmin); // Envia a mensagem ao administrador
 
         } else {
             await ctx.reply('Ainda não identifiquei esse pagamento, aguarde e verifique novamente...', {
@@ -158,9 +158,8 @@ async function verificarPagamento(ctx, transactionId) {
     }
 }
 
-
 // Comandos para gerar pagamento
-bot.action('pixmorango', (ctx) => gerarPagamento(ctx, 50.90, 'PACOTE MORANGO • R$19,90\n10 fotos e 13 vídeos'));
+bot.action('pixmorango', (ctx) => gerarPagamento(ctx, 1990, 'PACOTE MORANGO • R$19,90\n10 fotos e 13 vídeos'));
 bot.action('pixpessego', (ctx) => gerarPagamento(ctx, 3700, 'PACOTE PÊSSEGO • R$37\n15 fotos e 20 vídeos'));
 bot.action('pixcereja', (ctx) => gerarPagamento(ctx, 5700, 'PACOTE CEREJA • R$57\n20 fotos e 25 vídeos'));
 
